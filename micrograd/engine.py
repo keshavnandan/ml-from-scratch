@@ -18,14 +18,13 @@ class Value:
                 topo.append(v)
 
         build_topo(self)
-
+        self.gradient = 1.0
         for node in reversed(topo):
             node._backward()
 
     def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data + other.data, (self, other), "+")
-
         def _backward():
             self.gradient += 1.0 * out.gradient
             other.gradient += 1.0 * out.gradient
@@ -35,12 +34,11 @@ class Value:
 
     def __mul__(self, other):
         other = other if isinstance(other, Value) else Value(other)
-
+        out = Value(self.data * other.data, (self, other), "*")
         def _backward():
             self.gradient += other.data * out.gradient
             other.gradient += self.data * out.gradient
 
-        out = Value(self.data * other.data, (self, other), "*")
         out._backward = _backward
         return out
 

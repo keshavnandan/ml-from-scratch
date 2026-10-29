@@ -21,7 +21,6 @@ def test_mul():
     assert b in out._children
     assert out._op == "*"
 
-
 def test_op_scalar():
     assert (Value(4.0) * 2).data == 8.0
     assert (Value(4.0) + 2).data == 6.0
@@ -59,7 +58,6 @@ def test_backward_topo():
     c = a * b
     d = a + b
     e = c + d
-    e.gradient = 1.0
     e.backward()
     assert a.gradient == 4.0  # 3.0 from c + 1.0 from d
     assert b.gradient == 3.0  # 2.0 from c + 1.0 from d
@@ -67,6 +65,5 @@ def test_backward_topo():
 def test_duplicate_backward():
     a = Value(2.0)
     b = a + a
-    b.gradient = 1.0
-    b._backward()
+    b.backward()
     assert a.gradient == 2.0  # 1.0 from each addition
