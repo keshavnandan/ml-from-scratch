@@ -67,3 +67,37 @@ def test_duplicate_backward():
     b = a + a
     b.backward()
     assert a.gradient == 2.0  # 1.0 from each addition
+
+def test_pow():
+    a = Value(2.0)
+    b = a ** 3
+    assert b._children == {a}
+    assert b._op == "**3"
+    assert b.data == 8.0
+    b.backward()
+    assert a.gradient == 12.0  # derivative of x^3 at x=2 is 3*2^2 = 12
+
+def test_true_div():
+    a = Value(4.0)
+    b = Value(2.0)
+    c = a / b
+    assert c.data == 2.0
+    c.backward()
+    assert a.gradient == 0.5  # derivative of x/y w.r.t x is 1/y
+    assert b.gradient == -1.0  # derivative of x/y w.r.t y is -x/y^2
+
+def test_neg():
+    a = Value(2.0)
+    b = -a
+    assert b.data == -2.0
+    b.backward()
+    assert a.gradient == -1.0  # derivative of -x w.r.t x is -1
+
+def test_sub():
+    a = Value(5.0)
+    b = Value(3.0)
+    c = a - b
+    assert c.data == 2.0
+    c.backward()
+    assert a.gradient == 1.0  # derivative of x-y w.r.t x is 1
+    assert b.gradient == -1.0  # derivative of x-y w.r.t y is -1
