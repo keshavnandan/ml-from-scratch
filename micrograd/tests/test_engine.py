@@ -21,6 +21,7 @@ def test_mul():
     assert b in out._children
     assert out._op == "*"
 
+
 def test_op_scalar():
     assert (Value(4.0) * 2).data == 8.0
     assert (Value(4.0) + 2).data == 6.0
@@ -53,6 +54,7 @@ def test_backward_chain():
     assert a.gradient == 4.0  # 3.0 from previous +
     assert b.gradient == 3.0  # 2.0 from previous +
 
+
 def test_backward_topo():
     a, b = Value(2.0), Value(3.0)
     c = a * b
@@ -62,20 +64,23 @@ def test_backward_topo():
     assert a.gradient == 4.0  # 3.0 from c + 1.0 from d
     assert b.gradient == 3.0  # 2.0 from c + 1.0 from d
 
+
 def test_duplicate_backward():
     a = Value(2.0)
     b = a + a
     b.backward()
     assert a.gradient == 2.0  # 1.0 from each addition
 
+
 def test_pow():
     a = Value(2.0)
-    b = a ** 3
+    b = a**3
     assert b._children == {a}
     assert b._op == "**3"
     assert b.data == 8.0
     b.backward()
     assert a.gradient == 12.0  # derivative of x^3 at x=2 is 3*2^2 = 12
+
 
 def test_true_div():
     a = Value(4.0)
@@ -86,12 +91,14 @@ def test_true_div():
     assert a.gradient == 0.5  # derivative of x/y w.r.t x is 1/y
     assert b.gradient == -1.0  # derivative of x/y w.r.t y is -x/y^2
 
+
 def test_neg():
     a = Value(2.0)
     b = -a
     assert b.data == -2.0
     b.backward()
     assert a.gradient == -1.0  # derivative of -x w.r.t x is -1
+
 
 def test_sub():
     a = Value(5.0)
@@ -101,3 +108,13 @@ def test_sub():
     c.backward()
     assert a.gradient == 1.0  # derivative of x-y w.r.t x is 1
     assert b.gradient == -1.0  # derivative of x-y w.r.t y is -1
+
+
+def test_tanh():
+    a = Value(0.5)
+    b = a.tanh()
+    assert abs(b.data - 0.46211715726000974) < 1e-6  # tanh(0.5) is approximately 0.4621
+    b.backward()
+    assert (
+        abs(a.gradient - (1 - b.data**2)) < 1e-6
+    )  # derivative of tanh(x) is 1 - tanh(x)^2
