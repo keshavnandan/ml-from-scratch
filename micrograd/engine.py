@@ -1,3 +1,6 @@
+import math
+
+
 class Value:
     def __init__(self, data, children=(), op=""):
         self.data = data
@@ -60,6 +63,17 @@ class Value:
 
         def _backward():
             self.gradient += -1 * out.gradient
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        e = math.exp(self.data)
+        t = (e**2 - 1) / (e**2 + 1)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.gradient += (1 - t**2) * out.gradient
 
         out._backward = _backward
         return out
