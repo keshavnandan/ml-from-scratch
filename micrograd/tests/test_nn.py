@@ -44,14 +44,14 @@ def test_layer():
 
 def test_mlp():
 
-    mlp = MLP(3, [2, 2])
+    mlp = MLP(3, [2, 1])
     x = [Value(2.0), Value(3.0), Value(-1.0)]
     y = mlp(x)
     assert isinstance(y, Value)
 
 
 def test_mlp_backward():
-    mlp = MLP(3, [2, 2])
+    mlp = MLP(3, [2, 1])
     x = [Value(2.0), Value(3.0), Value(-1.0)]
     y = mlp(x)
     y.gradient = 1.0
@@ -67,7 +67,7 @@ def test_network_is_not_affine():
     """An affine map satisfies f(a)-f(0) + f(b)-f(0) == f(a+b)-f(0).
     A real MLP must violate this."""
     random.seed(0)
-    m = MLP(2, [4])
+    m = MLP(2, [4, 1])
 
     def f(xs):
         return m([Value(v) for v in xs]).data
@@ -106,3 +106,13 @@ def test_neuron_rejects_wrong_input_length():
     n = Neuron(3)
     with pytest.raises(ValueError):
         n([Value(1.0), Value(2.0)])  # needs zip(strict=True)
+
+
+def test_mlp_requires_single_output():
+    with pytest.raises(AssertionError):
+        MLP(3, [4, 2])
+
+
+def test_tanh_large_input_does_not_overflow():
+    assert Value(1000.0).tanh().data == 1.0
+    assert Value(-1000.0).tanh().data == -1.0

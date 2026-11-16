@@ -51,7 +51,7 @@ class Value:
 
     def __pow__(self, other):
         if not isinstance(other, (int, float)):
-            raise TypeError("{other} not supported for power function")
+            raise TypeError(f"{other} not supported for power function")
         out = Value(self.data**other, (self,), f"**{other}")
 
         def _backward():
@@ -70,8 +70,7 @@ class Value:
         return out
 
     def tanh(self):
-        e = math.exp(self.data)
-        t = (e**2 - 1) / (e**2 + 1)
+        t = math.tanh(self.data)
         out = Value(t, (self,), "tanh")
 
         def _backward():

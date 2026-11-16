@@ -9,7 +9,6 @@ class Neuron:
         self.b = Value(random.uniform(-1, 1))
 
     def __call__(self, x):
-        print(self.w, x)
         out = sum([wi * xi for (wi, xi) in zip(self.w, x, strict=True)], self.b)
         return out.tanh()
 
@@ -19,12 +18,13 @@ class Layer:
         self.nout = nout
         self.neurons = [Neuron(nin) for _ in range(nout)]
 
-    def __call__(self, layer):
-        return [n(layer) for n in self.neurons]
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
 
 
 class MLP:
     def __init__(self, nin, nouts):
+        assert nouts and nouts[-1] == 1, "MLP must end in a single output neuron"
         self.nin = nin
         sizes = [nin] + nouts
         self.layers = [Layer(sizes[i - 1], sizes[i]) for i in range(1, len(sizes))]
@@ -33,4 +33,4 @@ class MLP:
         for layer in self.layers:
             x = layer(x)
 
-        return x[0].tanh()
+        return x[0]
