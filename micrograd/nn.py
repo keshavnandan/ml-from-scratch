@@ -9,8 +9,9 @@ class Neuron:
         self.b = Value(random.uniform(-1, 1))
 
     def __call__(self, x):
-        out = sum([wi * xi for (wi, xi) in zip(self.w, x)], self.b)
-        return out
+        print(self.w, x)
+        out = sum([wi * xi for (wi, xi) in zip(self.w, x, strict=True)], self.b)
+        return out.tanh()
 
 
 class Layer:
@@ -25,12 +26,11 @@ class Layer:
 class MLP:
     def __init__(self, nin, nouts):
         self.nin = nin
-        sizes = [nin] + nouts + [1]
-        self.layers = [Layer(sizes[i - 1], sizes[i]) for i in range(1, len(sizes) - 1)]
+        sizes = [nin] + nouts
+        self.layers = [Layer(sizes[i - 1], sizes[i]) for i in range(1, len(sizes))]
 
     def __call__(self, x):
         for layer in self.layers:
             x = layer(x)
 
-        # print(x)
         return x[0].tanh()

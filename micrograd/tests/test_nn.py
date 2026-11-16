@@ -1,7 +1,8 @@
+import math
+import random
+import pytest
 from micrograd.engine import Value
-from micrograd.nn import Neuron
-from micrograd.nn import Layer
-from micrograd.nn import MLP
+from micrograd.nn import Neuron, Layer, MLP
 
 
 def test_neuron():
@@ -10,7 +11,9 @@ def test_neuron():
     b = n.b.data
     x = [Value(2.0), Value(3.0), Value(-1.0)]
     y = n(x)
-    assert y.data == w[0] * 2.0 + w[1] * 3.0 + w[2] * -1.0 + b
+    assert y.data == pytest.approx(
+        math.tanh(w[0] * 2.0 + w[1] * 3.0 + w[2] * -1.0 + b)
+    )
 
 
 def test_neuron_backward():
@@ -19,23 +22,24 @@ def test_neuron_backward():
     y = n(x)
     y.gradient = 1.0
     y.backward()
+    local = 1.0 - y.data**2  # d tanh(z)/dz
     for i in range(3):
-        assert n.w[i].gradient == x[i].data * y.gradient
-    assert n.b.gradient == 1.0 * y.gradient
+        assert n.w[i].gradient == pytest.approx(x[i].data * local)
+    assert n.b.gradient == pytest.approx(local)
 
 
 def test_layer():
 
-    l = Layer(3, 2)
+    l = Layer(2, 2)
     x = [Value(2.0), Value(3.0)]
     y = l(x)
     assert len(y) == 2
     for i in range(2):
-        assert (
-            y[i].data
-            == sum([l.neurons[i].w[j].data * x[j].data for j in range(2)])
+        z = (
+            sum([l.neurons[i].w[j].data * x[j].data for j in range(2)])
             + l.neurons[i].b.data
         )
+        assert y[i].data == pytest.approx(math.tanh(z))
 
 
 def test_mlp():
@@ -57,3 +61,48 @@ def test_mlp_backward():
             for w in neuron.w:
                 assert w.gradient is not None
             assert neuron.b.gradient is not None
+
+
+def test_network_is_not_affine():
+    """An affine map satisfies f(a)-f(0) + f(b)-f(0) == f(a+b)-f(0).
+    A real MLP must violate this."""
+    random.seed(0)
+    m = MLP(2, [4])
+
+    def f(xs):
+        return m([Value(v) for v in xs]).data
+
+    zero = f([0.0, 0.0])
+    a, b = [1.0, 0.5], [-0.3, 2.0]
+    lhs = (f(a) - zero) + (f(b) - zero)
+    rhs = f([a[0] + b[0], a[1] + b[1]]) - zero
+    assert abs(lhs - rhs) > 1e-6, "network behaves affinely — nonlinearity missing"
+
+
+def test_mlp_layer_shapes():
+    m = MLP(3, [4, 4, 1])
+    assert len(m.layers) == 3  # 3->4, 4->4, 4->1
+    assert [len(l.neurons) for l in m.layers] == [4, 4, 1]
+    assert [len(l.neurons[0].w) for l in m.layers] == [3, 4, 4]
+
+
+def test_mlp_parameter_count():
+    m = MLP(3, [4, 4, 1])
+    total = sum(len(n.w) + 1 for l in m.layers for n in l.neurons)
+    assert total == (3 * 4 + 4) + (4 * 4 + 4) + (4 * 1 + 1)  # 41
+
+
+def test_mlp_backward_gradients_are_live():
+    random.seed(0)
+    m = MLP(3, [4, 4, 1])
+    y = m([Value(2.0), Value(3.0), Value(-1.0)])
+    y.backward()
+    grads = [w.gradient for l in m.layers for n in l.neurons for w in n.w]
+    assert any(g != 0.0 for g in grads), "no gradient reached the weights"
+    assert all(g == g for g in grads), "NaN in gradients"
+
+
+def test_neuron_rejects_wrong_input_length():
+    n = Neuron(3)
+    with pytest.raises(ValueError):
+        n([Value(1.0), Value(2.0)])  # needs zip(strict=True)
