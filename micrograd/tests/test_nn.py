@@ -135,3 +135,12 @@ def test_mlp_parameters():
     params = m.parameters()
     assert len(params) == 13  # (3*(2+1)) + (1*(3+1)) = 9 + 4 = 13
     assert all(isinstance(p, Value) for p in params)
+
+
+def test_mlp_zero_grad():
+    m = MLP(2, [3, 1])
+    # Set some gradients
+    for p in m.parameters():
+        p.gradient = random.uniform(-1, 1)
+    m.zero_grad()
+    assert all(p.gradient == 0.0 for p in m.parameters())
