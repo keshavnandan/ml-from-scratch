@@ -11,9 +11,7 @@ def test_neuron():
     b = n.b.data
     x = [Value(2.0), Value(3.0), Value(-1.0)]
     y = n(x)
-    assert y.data == pytest.approx(
-        math.tanh(w[0] * 2.0 + w[1] * 3.0 + w[2] * -1.0 + b)
-    )
+    assert y.data == pytest.approx(math.tanh(w[0] * 2.0 + w[1] * 3.0 + w[2] * -1.0 + b))
 
 
 def test_neuron_backward():
@@ -116,3 +114,24 @@ def test_mlp_requires_single_output():
 def test_tanh_large_input_does_not_overflow():
     assert Value(1000.0).tanh().data == 1.0
     assert Value(-1000.0).tanh().data == -1.0
+
+
+def test_neuron_parameters():
+    n = Neuron(3)
+    params = n.parameters()
+    assert len(params) == 4  # 3 weights + 1 bias
+    assert all(isinstance(p, Value) for p in params)
+
+
+def test_layer_parameters():
+    l = Layer(2, 3)
+    params = l.parameters()
+    assert len(params) == 9  # 3 neurons * (2 weights + 1 bias)
+    assert all(isinstance(p, Value) for p in params)
+
+
+def test_mlp_parameters():
+    m = MLP(2, [3, 1])
+    params = m.parameters()
+    assert len(params) == 13  # (3*(2+1)) + (1*(3+1)) = 9 + 4 = 13
+    assert all(isinstance(p, Value) for p in params)
