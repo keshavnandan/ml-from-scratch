@@ -28,7 +28,7 @@ class Value:
     def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data + other.data, (self, other), "+")
-        # print(f"out({self.data} + {other.data}) -> {out.data}")
+        # print(f"({self.data} + {other.data}) -> {out.data}")
 
         def _backward():
             self.gradient += 1.0 * out.gradient
@@ -40,7 +40,7 @@ class Value:
     def __mul__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data * other.data, (self, other), "*")
-        # print(f"out({self.data} * {other.data}) -> {out.data}")
+        # print(f"({self.data} * {other.data}) -> {out.data}")
 
         def _backward():
             self.gradient += other.data * out.gradient
@@ -53,6 +53,7 @@ class Value:
         if not isinstance(other, (int, float)):
             raise TypeError(f"{other} not supported for power function")
         out = Value(self.data**other, (self,), f"**{other}")
+        # print(f"({self.data} ** {other}) -> {out.data}")
 
         def _backward():
             self.gradient += other * (self.data ** (other - 1)) * out.gradient
@@ -72,6 +73,7 @@ class Value:
     def tanh(self):
         t = math.tanh(self.data)
         out = Value(t, (self,), "tanh")
+        # print(f"tanh{self.data} -> {out.data}")
 
         def _backward():
             self.gradient += (1 - t**2) * out.gradient
