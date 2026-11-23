@@ -40,24 +40,29 @@ def random_expr(depth, rng, leaves, max_depth):
 
 
 def test_gradients_match_torch():
-    for i in range(100):
-        seed = 10 * i + 1
-        rng = random.Random(seed)
-        leaves = []
-        v, t = random_expr(depth=5, rng=rng, leaves=leaves, max_depth=5)
-        if abs(v.data) > 1e3:
-            # skip large values to avoid triggering false alarms on comparison
-            continue
+    for depth in (2, 5, 8):
+        for i in range(100):
+            seed = 10 * i + 1
+            rng = random.Random(seed)
+            leaves = []
+            v, t = random_expr(depth=depth, rng=rng, leaves=leaves, max_depth=depth)
 
-        v.backward()
-        t.backward()
+            assert v.data == pytest.approx(
+                t.item(), rel=1e-9, abs=1e-8
+            ), f"Data mismatch at seed={seed}, depth={depth}"
 
-        if max(abs(vleaf.gradient) for vleaf, _ in leaves) < 1e-3:
-            # skip saturated trees where all leaf gradients are ~0
-            continue
+            if abs(v.data) > 1e3:
+                # skip large values to avoid triggering false alarms on comparison
+                continue
 
-        assert v.data == pytest.approx(t.item()), f"Data mismatch at seed={seed}"
-        for vleaf, tleaf in leaves:
-            assert vleaf.gradient == pytest.approx(
-                tleaf.grad.item(), rel=1e-9, abs=1e-8
-            ), f"Grad mismatch at seed={seed}"
+            v.backward()
+            t.backward()
+
+            if max(abs(vleaf.gradient) for vleaf, _ in leaves) < 1e-3:
+                # skip saturated trees where all leaf gradients are ~0
+                continue
+
+            for vleaf, tleaf in leaves:
+                assert vleaf.gradient == pytest.approx(
+                    tleaf.grad.item(), rel=1e-9, abs=1e-8
+                ), f"Grad mismatch at seed={seed}, depth={depth}"
